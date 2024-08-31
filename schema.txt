@@ -1,0 +1,658 @@
+#######################
+# Input Schema
+#######################
+
+type Currency {
+	symbol: String! @id
+}
+
+type Account {
+	id: ID
+	type: String
+	provider: String @search(by: [hash])
+	providerAccountId: String @search(by: [hash])
+	expires_at: Int64
+	token_type: String
+	refresh_token: String
+	access_token: String
+	scope: String
+	id_token: String
+	session_state: String
+	user(filter: UserFilter): User @hasInverse(field: accounts)
+}
+
+type User {
+	id: ID
+	username: String! @id @search(by: [exact,fulltext,term])
+	email: String! @id @search(by: [hash])
+	emailVerified: String
+	password: String
+	accounts(filter: AccountFilter, order: AccountOrder, first: Int, offset: Int): [Account] @hasInverse(field: user)
+	followers(filter: UserFilter, order: UserOrder, first: Int, offset: Int): [User] @hasInverse(field: following)
+	following(filter: UserFilter, order: UserOrder, first: Int, offset: Int): [User] @hasInverse(field: followers)
+	currency(filter: CurrencyFilter): Currency!
+	accountsAggregate(filter: AccountFilter): AccountAggregateResult
+	followersAggregate(filter: UserFilter): UserAggregateResult
+	followingAggregate(filter: UserFilter): UserAggregateResult
+}
+
+#######################
+# Extended Definitions
+#######################
+
+"""
+The Int64 scalar type represents a signed 64‐bit numeric non‐fractional value.
+Int64 can represent values in range [-(2^63),(2^63 - 1)].
+"""
+scalar Int64
+
+"""
+The DateTime scalar type represents date and time as a string in RFC3339 format.
+For example: "1985-04-12T23:20:50.52Z" represents 20 mins 50.52 secs after the 23rd hour of Apr 12th 1985 in UTC.
+"""
+scalar DateTime
+
+input IntRange{
+	min: Int!
+	max: Int!
+}
+
+input FloatRange{
+	min: Float!
+	max: Float!
+}
+
+input Int64Range{
+	min: Int64!
+	max: Int64!
+}
+
+input DateTimeRange{
+	min: DateTime!
+	max: DateTime!
+}
+
+input StringRange{
+	min: String!
+	max: String!
+}
+
+enum DgraphIndex {
+	int
+	int64
+	float
+	bool
+	hash
+	exact
+	term
+	fulltext
+	trigram
+	regexp
+	year
+	month
+	day
+	hour
+	geo
+	hnsw
+}
+
+input AuthRule {
+	and: [AuthRule]
+	or: [AuthRule]
+	not: AuthRule
+	rule: String
+}
+
+enum HTTPMethod {
+	GET
+	POST
+	PUT
+	PATCH
+	DELETE
+}
+
+enum Mode {
+	BATCH
+	SINGLE
+}
+
+input CustomHTTP {
+	url: String!
+	method: HTTPMethod!
+	body: String
+	graphql: String
+	mode: Mode
+	forwardHeaders: [String!]
+	secretHeaders: [String!]
+	introspectionHeaders: [String!]
+	skipIntrospection: Boolean
+}
+
+type Point {
+	longitude: Float!
+	latitude: Float!
+}
+
+input PointRef {
+	longitude: Float!
+	latitude: Float!
+}
+
+input NearFilter {
+	distance: Float!
+	coordinate: PointRef!
+}
+
+input PointGeoFilter {
+	near: NearFilter
+	within: WithinFilter
+}
+
+type PointList {
+	points: [Point!]!
+}
+
+input PointListRef {
+	points: [PointRef!]!
+}
+
+type Polygon {
+	coordinates: [PointList!]!
+}
+
+input PolygonRef {
+	coordinates: [PointListRef!]!
+}
+
+type MultiPolygon {
+	polygons: [Polygon!]!
+}
+
+input MultiPolygonRef {
+	polygons: [PolygonRef!]!
+}
+
+input WithinFilter {
+	polygon: PolygonRef!
+}
+
+input ContainsFilter {
+	point: PointRef
+	polygon: PolygonRef
+}
+
+input IntersectsFilter {
+	polygon: PolygonRef
+	multiPolygon: MultiPolygonRef
+}
+
+input PolygonGeoFilter {
+	near: NearFilter
+	within: WithinFilter
+	contains: ContainsFilter
+	intersects: IntersectsFilter
+}
+
+input GenerateQueryParams {
+	get: Boolean
+	query: Boolean
+	password: Boolean
+	aggregate: Boolean
+}
+
+input GenerateMutationParams {
+	add: Boolean
+	update: Boolean
+	delete: Boolean
+}
+
+directive @hasInverse(field: String!) on FIELD_DEFINITION
+directive @search(by: [String!]) on FIELD_DEFINITION
+directive @embedding on FIELD_DEFINITION
+directive @dgraph(type: String, pred: String) on OBJECT | INTERFACE | FIELD_DEFINITION
+directive @id(interface: Boolean) on FIELD_DEFINITION
+directive @withSubscription on OBJECT | INTERFACE | FIELD_DEFINITION
+directive @secret(field: String!, pred: String) on OBJECT | INTERFACE
+directive @auth(
+	password: AuthRule
+	query: AuthRule,
+	add: AuthRule,
+	update: AuthRule,
+	delete: AuthRule) on OBJECT | INTERFACE
+directive @custom(http: CustomHTTP, dql: String) on FIELD_DEFINITION
+directive @remote on OBJECT | INTERFACE | UNION | INPUT_OBJECT | ENUM
+directive @remoteResponse(name: String) on FIELD_DEFINITION
+directive @cascade(fields: [String]) on FIELD
+directive @lambda on FIELD_DEFINITION
+directive @lambdaOnMutate(add: Boolean, update: Boolean, delete: Boolean) on OBJECT | INTERFACE
+directive @cacheControl(maxAge: Int!) on QUERY
+directive @generate(
+	query: GenerateQueryParams,
+	mutation: GenerateMutationParams,
+	subscription: Boolean) on OBJECT | INTERFACE
+
+input IntFilter {
+	eq: Int
+	in: [Int]
+	le: Int
+	lt: Int
+	ge: Int
+	gt: Int
+	between: IntRange
+}
+
+input Int64Filter {
+	eq: Int64
+	in: [Int64]
+	le: Int64
+	lt: Int64
+	ge: Int64
+	gt: Int64
+	between: Int64Range
+}
+
+input FloatFilter {
+	eq: Float
+	in: [Float]
+	le: Float
+	lt: Float
+	ge: Float
+	gt: Float
+	between: FloatRange
+}
+
+input DateTimeFilter {
+	eq: DateTime
+	in: [DateTime]
+	le: DateTime
+	lt: DateTime
+	ge: DateTime
+	gt: DateTime
+	between: DateTimeRange
+}
+
+input StringTermFilter {
+	allofterms: String
+	anyofterms: String
+}
+
+input StringRegExpFilter {
+	regexp: String
+}
+
+input StringFullTextFilter {
+	alloftext: String
+	anyoftext: String
+}
+
+input StringExactFilter {
+	eq: String
+	in: [String]
+	le: String
+	lt: String
+	ge: String
+	gt: String
+	between: StringRange
+}
+
+input StringHashFilter {
+	eq: String
+	in: [String]
+}
+
+#######################
+# Generated Types
+#######################
+
+type AccountAggregateResult {
+	count: Int
+	typeMin: String
+	typeMax: String
+	providerMin: String
+	providerMax: String
+	providerAccountIdMin: String
+	providerAccountIdMax: String
+	expires_atMin: Int64
+	expires_atMax: Int64
+	expires_atSum: Int64
+	expires_atAvg: Float
+	token_typeMin: String
+	token_typeMax: String
+	refresh_tokenMin: String
+	refresh_tokenMax: String
+	access_tokenMin: String
+	access_tokenMax: String
+	scopeMin: String
+	scopeMax: String
+	id_tokenMin: String
+	id_tokenMax: String
+	session_stateMin: String
+	session_stateMax: String
+}
+
+type AddAccountPayload {
+	account(filter: AccountFilter, order: AccountOrder, first: Int, offset: Int): [Account]
+	numUids: Int
+}
+
+type AddCurrencyPayload {
+	currency(filter: CurrencyFilter, order: CurrencyOrder, first: Int, offset: Int): [Currency]
+	numUids: Int
+}
+
+type AddUserPayload {
+	user(filter: UserFilter, order: UserOrder, first: Int, offset: Int): [User]
+	numUids: Int
+}
+
+type CurrencyAggregateResult {
+	count: Int
+	symbolMin: String
+	symbolMax: String
+}
+
+type DeleteAccountPayload {
+	account(filter: AccountFilter, order: AccountOrder, first: Int, offset: Int): [Account]
+	msg: String
+	numUids: Int
+}
+
+type DeleteCurrencyPayload {
+	currency(filter: CurrencyFilter, order: CurrencyOrder, first: Int, offset: Int): [Currency]
+	msg: String
+	numUids: Int
+}
+
+type DeleteUserPayload {
+	user(filter: UserFilter, order: UserOrder, first: Int, offset: Int): [User]
+	msg: String
+	numUids: Int
+}
+
+type UpdateAccountPayload {
+	account(filter: AccountFilter, order: AccountOrder, first: Int, offset: Int): [Account]
+	numUids: Int
+}
+
+type UpdateCurrencyPayload {
+	currency(filter: CurrencyFilter, order: CurrencyOrder, first: Int, offset: Int): [Currency]
+	numUids: Int
+}
+
+type UpdateUserPayload {
+	user(filter: UserFilter, order: UserOrder, first: Int, offset: Int): [User]
+	numUids: Int
+}
+
+type UserAggregateResult {
+	count: Int
+	usernameMin: String
+	usernameMax: String
+	emailMin: String
+	emailMax: String
+	emailVerifiedMin: String
+	emailVerifiedMax: String
+	passwordMin: String
+	passwordMax: String
+}
+
+#######################
+# Generated Enums
+#######################
+
+enum AccountHasFilter {
+	type
+	provider
+	providerAccountId
+	expires_at
+	token_type
+	refresh_token
+	access_token
+	scope
+	id_token
+	session_state
+	user
+}
+
+enum AccountOrderable {
+	type
+	provider
+	providerAccountId
+	expires_at
+	token_type
+	refresh_token
+	access_token
+	scope
+	id_token
+	session_state
+}
+
+enum CurrencyHasFilter {
+	symbol
+}
+
+enum CurrencyOrderable {
+	symbol
+}
+
+enum UserHasFilter {
+	username
+	email
+	emailVerified
+	password
+	accounts
+	followers
+	following
+	currency
+}
+
+enum UserOrderable {
+	username
+	email
+	emailVerified
+	password
+}
+
+#######################
+# Generated Inputs
+#######################
+
+input AccountFilter {
+	id: [ID!]
+	provider: StringHashFilter
+	providerAccountId: StringHashFilter
+	has: [AccountHasFilter]
+	and: [AccountFilter]
+	or: [AccountFilter]
+	not: AccountFilter
+}
+
+input AccountOrder {
+	asc: AccountOrderable
+	desc: AccountOrderable
+	then: AccountOrder
+}
+
+input AccountPatch {
+	type: String
+	provider: String
+	providerAccountId: String
+	expires_at: Int64
+	token_type: String
+	refresh_token: String
+	access_token: String
+	scope: String
+	id_token: String
+	session_state: String
+	user: UserRef
+}
+
+input AccountRef {
+	id: ID
+	type: String
+	provider: String
+	providerAccountId: String
+	expires_at: Int64
+	token_type: String
+	refresh_token: String
+	access_token: String
+	scope: String
+	id_token: String
+	session_state: String
+	user: UserRef
+}
+
+input AddAccountInput {
+	type: String
+	provider: String
+	providerAccountId: String
+	expires_at: Int64
+	token_type: String
+	refresh_token: String
+	access_token: String
+	scope: String
+	id_token: String
+	session_state: String
+	user: UserRef
+}
+
+input AddCurrencyInput {
+	symbol: String!
+}
+
+input AddUserInput {
+	username: String!
+	email: String!
+	emailVerified: String
+	password: String
+	accounts: [AccountRef]
+	followers: [UserRef]
+	following: [UserRef]
+	currency: CurrencyRef!
+}
+
+input CurrencyFilter {
+	symbol: StringHashFilter
+	has: [CurrencyHasFilter]
+	and: [CurrencyFilter]
+	or: [CurrencyFilter]
+	not: CurrencyFilter
+}
+
+input CurrencyOrder {
+	asc: CurrencyOrderable
+	desc: CurrencyOrderable
+	then: CurrencyOrder
+}
+
+input CurrencyPatch {
+	symbol: String
+}
+
+input CurrencyRef {
+	symbol: String!
+}
+
+input StringExactFilter_StringFullTextFilter_StringTermFilter {
+	eq: String
+	in: [String]
+	le: String
+	lt: String
+	ge: String
+	gt: String
+	between: StringRange
+	alloftext: String
+	anyoftext: String
+	allofterms: String
+	anyofterms: String
+}
+
+input UpdateAccountInput {
+	filter: AccountFilter!
+	set: AccountPatch
+	remove: AccountPatch
+}
+
+input UpdateCurrencyInput {
+	filter: CurrencyFilter!
+	set: CurrencyPatch
+	remove: CurrencyPatch
+}
+
+input UpdateUserInput {
+	filter: UserFilter!
+	set: UserPatch
+	remove: UserPatch
+}
+
+input UserFilter {
+	id: [ID!]
+	username: StringExactFilter_StringFullTextFilter_StringTermFilter
+	email: StringHashFilter
+	has: [UserHasFilter]
+	and: [UserFilter]
+	or: [UserFilter]
+	not: UserFilter
+}
+
+input UserOrder {
+	asc: UserOrderable
+	desc: UserOrderable
+	then: UserOrder
+}
+
+input UserPatch {
+	username: String
+	email: String
+	emailVerified: String
+	password: String
+	accounts: [AccountRef]
+	followers: [UserRef]
+	following: [UserRef]
+	currency: CurrencyRef
+}
+
+input UserRef {
+	id: ID
+	username: String
+	email: String
+	emailVerified: String
+	password: String
+	accounts: [AccountRef]
+	followers: [UserRef]
+	following: [UserRef]
+	currency: CurrencyRef
+}
+
+#######################
+# Generated Query
+#######################
+
+type Query {
+	getCurrency(symbol: String!): Currency
+	queryCurrency(filter: CurrencyFilter, order: CurrencyOrder, first: Int, offset: Int): [Currency]
+	aggregateCurrency(filter: CurrencyFilter): CurrencyAggregateResult
+	getAccount(id: ID!): Account
+	queryAccount(filter: AccountFilter, order: AccountOrder, first: Int, offset: Int): [Account]
+	aggregateAccount(filter: AccountFilter): AccountAggregateResult
+	getUser(id: ID, username: String, email: String): User
+	queryUser(filter: UserFilter, order: UserOrder, first: Int, offset: Int): [User]
+	aggregateUser(filter: UserFilter): UserAggregateResult
+}
+
+#######################
+# Generated Mutations
+#######################
+
+type Mutation {
+	addCurrency(input: [AddCurrencyInput!]!, upsert: Boolean): AddCurrencyPayload
+	updateCurrency(input: UpdateCurrencyInput!): UpdateCurrencyPayload
+	deleteCurrency(filter: CurrencyFilter!): DeleteCurrencyPayload
+	addAccount(input: [AddAccountInput!]!): AddAccountPayload
+	updateAccount(input: UpdateAccountInput!): UpdateAccountPayload
+	deleteAccount(filter: AccountFilter!): DeleteAccountPayload
+	addUser(input: [AddUserInput!]!, upsert: Boolean): AddUserPayload
+	updateUser(input: UpdateUserInput!): UpdateUserPayload
+	deleteUser(filter: UserFilter!): DeleteUserPayload
+}
+
