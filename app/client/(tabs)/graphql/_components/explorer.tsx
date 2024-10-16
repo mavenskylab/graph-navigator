@@ -9,17 +9,20 @@ import Query from './query'
 
 import { Attribute } from '@/lib/dgraph'
 import explorerReducer, { QueryState, State } from './reducer'
+import Mutation from './mutation'
 
 export default function Explorer({
   schema,
   attributes,
   inputs,
   queries,
+  mutations
 }: {
   schema: string | null
   attributes: Record<string, Attribute[]>
   inputs: Record<string, Attribute[]>
   queries: Record<string, any>
+  mutations: Record<string, any>
 }) {
   const [state, dispatch] = useReducer(explorerReducer, {})
 
@@ -97,6 +100,20 @@ export default function Explorer({
                   attributes={attributes}
                   inputs={inputs}
                   state={state[query]}
+                  dispatch={dispatch}
+                />
+              ))}
+            </ul>
+            <ul>
+              {Object.entries(mutations).map(([mutation, { params, type }]) => (
+                <Mutation
+                  key={mutation}
+                  mutation={mutation}
+                  params={params}
+                  type={type}
+                  attributes={attributes}
+                  inputs={inputs}
+                  state={state[mutation]}
                   dispatch={dispatch}
                 />
               ))}

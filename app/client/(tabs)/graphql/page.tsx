@@ -19,13 +19,13 @@ export default async function Page() {
 
   const schema: string | null = getGQLSchema.generatedSchema
 
-  const { types, attributes, inputs, queries } = breakdownGeneratedSchema(schema)
+  const { types, attributes, inputs, queries, mutations } = breakdownGeneratedSchema(schema)
 
   return (
     <div className='flex size-full justify-center'>
       <section className='flex size-full max-h-dvh max-w-screen-2xl flex-col gap-3 divide-y divide-base-200 p-5'>
         <FormEndpoint data={{ endpoint, url }} />
-        <Explorer schema={schema} attributes={attributes} inputs={inputs} queries={queries}  />
+        <Explorer schema={schema} attributes={attributes} inputs={inputs} queries={queries} mutations={mutations}  />
       </section>
     </div>
   )

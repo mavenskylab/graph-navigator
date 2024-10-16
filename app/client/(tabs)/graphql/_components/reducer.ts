@@ -3,6 +3,11 @@ type QueryAction = {
   payload: { query: string; selected: boolean }
 }
 
+type MutationAction = {
+  type: 'MUTATION'
+  payload: { mutation: string; selected: boolean }
+}
+
 type SelectParamAction = {
   type: 'SELECT_PARAM'
   payload: { parent: string; param: string; selected: boolean }
@@ -23,6 +28,7 @@ type FieldAction = {
 
 export type Action =
   | QueryAction
+  | MutationAction
   | SelectParamAction
   | SetParamAction
   | VarParamAction
@@ -60,6 +66,8 @@ export default function explorerReducer(
   switch (type) {
     case 'QUERY':
       return handleQueryAction(state, payload)
+    case 'MUTATION':
+      return handleMutationAction(state, payload)
     case 'SELECT_PARAM':
       return handleSelectParamAction(state, payload)
     case 'SET_PARAM':
@@ -81,6 +89,19 @@ function handleQueryAction(
     ...state,
     [query]: {
       ...state[query],
+      selected,
+    },
+  }
+}
+
+function handleMutationAction(
+  state: State,
+  { mutation, selected }: MutationAction['payload'],
+): State {
+  return {
+    ...state,
+    [mutation]: {
+      ...state[mutation],
       selected,
     },
   }

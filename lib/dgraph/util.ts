@@ -47,7 +47,9 @@ export function breakdownGeneratedSchema(schema: string | null) {
 
   const queries = getQueries(sections)
 
-  return { types, attributes, inputs, queries }
+  const mutations = getMutations(sections)
+
+  return { types, attributes, inputs, queries, mutations }
 }
 
 function getAttribute(attribute: string): Attribute {
@@ -98,6 +100,23 @@ function getQueries(sections?: string[]) {
   return Object.fromEntries(
     [...matches].map(([_, query, params, type]) => [
       query.trim(),
+      {
+        params: params.split(', ').map(getAttribute),
+        type: type?.replaceAll(/[\[\]!]/g, ''),
+        isArray: type?.includes('['),
+      },
+    ]),
+  )
+}
+
+function getMutations(sections?: string[]) {
+  const matches = sections?.at(7)?.matchAll(/^\s+(\w+)\((.*)\):\s(.*)/gm)
+
+  if (!matches) return {}
+
+  return Object.fromEntries(
+    [...matches].map(([_, mutation, params, type]) => [
+      mutation.trim(),
       {
         params: params.split(', ').map(getAttribute),
         type: type?.replaceAll(/[\[\]!]/g, ''),
